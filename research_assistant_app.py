@@ -66,28 +66,28 @@ Summarize the following '{title}' section of a research paper in 4–6 bullet po
     st.subheader("🧠 Your Research Question")
     research_question = st.text_area("Enter your research question or area of interest:")
 
-    if research_question:
+    if st.button("🔍 Analyze My Research Question") and research_question:
         combined_summary = "\n\n".join(
             [f"{k.capitalize()}:\n{v}" for k, v in summaries.items()]
         )
-
+    
         def analyze_research_opportunities(summary_text, research_question):
             prompt = f"""
-You are an expert academic research assistant.
-
-The following is a summarized paper:
-\"\"\"{summary_text}\"\"\"
-
-And here is a research question:
-\"{research_question}\"
-
-Please:
-1. List 3–5 limitations in the original paper.
-2. Identify 3 gaps or unexplored issues.
-3. Suggest how this research question can be explored in a new study.
-
-Use bullet points.
-"""
+    You are an expert academic research assistant.
+    
+    The following is a summarized paper:
+    \"\"\"{summary_text}\"\"\"
+    
+    And here is a research question:
+    \"{research_question}\"
+    
+    Please:
+    1. List 3–5 limitations in the original paper.
+    2. Identify 3 gaps or unexplored issues.
+    3. Suggest how this research question can be explored in a new study.
+    
+    Use bullet points.
+    """
             response = client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
@@ -95,7 +95,7 @@ Use bullet points.
                 max_tokens=1000
             )
             return response.choices[0].message.content.strip()
-
+    
         analysis = analyze_research_opportunities(combined_summary, research_question)
         st.subheader("📌 Research Assistant Analysis")
         st.write(analysis)
