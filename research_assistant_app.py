@@ -4,17 +4,16 @@ import streamlit as st
 import fitz  # PyMuPDF
 from openai import OpenAI
 
+# Access API key from Streamlit secrets
+api_key = st.secrets["OPENAI_API_KEY"]
+client = OpenAI(api_key=api_key)
+
+
 # ==== SETUP ====
 st.set_page_config(page_title="AI Research Assistant", layout="wide")
 st.title("📚 AI-Powered Research Assistant")
 st.markdown("Upload a research paper and get summarized insights + research guidance.")
 
-# === OpenAI Key Input (hidden in sidebar) ===
-with st.sidebar:
-    st.header("🔐 OpenAI API Key")
-    api_key = st.text_input("Enter your OpenAI API Key", type="password")
-    model = st.selectbox("Model", ["gpt-4", "gpt-3.5-turbo"])
-    submit_key = st.button("Connect")
 
 # === File Upload ===
 uploaded_file = st.file_uploader("📄 Upload PDF Paper", type="pdf")
