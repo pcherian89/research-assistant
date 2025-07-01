@@ -1,16 +1,14 @@
-# === research_assistant_app.py ===
-
 import streamlit as st
 import fitz  # PyMuPDF
 import re
 from openai import OpenAI
 
-# === CONFIG ===
+# === SETUP ===
 st.set_page_config(page_title="AI Research Assistant", layout="wide")
 st.title("📚 AI-Powered Research Assistant")
 st.markdown("Upload a research paper and get summarized insights + research guidance.")
 
-# === OpenAI client using Streamlit secrets ===
+# === Load OpenAI key from Streamlit secrets ===
 api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=api_key)
 
@@ -18,8 +16,8 @@ client = OpenAI(api_key=api_key)
 uploaded_file = st.file_uploader("📄 Upload PDF Paper", type="pdf")
 
 if uploaded_file:
-    # === Extract Text from PDF ===
     try:
+        # === Extract Text ===
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         full_text = "".join([page.get_text() for page in doc])
         st.success("✅ PDF extracted successfully!")
@@ -27,24 +25,19 @@ if uploaded_file:
         st.error(f"❌ Failed to read PDF: {e}")
         st.stop()
 
-    # === Dynamic Section Chunking ===
-    def chunk_by_dynamic_headings(text):
-        lines = text.split("\n")
-        section_starts = []
-        for i, line in enumerate(lines):
-            if 2 <= len(line.split()) <= 6 and line.strip().istitle():
-                section_starts.append((i, line.strip()))
+    # === Chunk by Known Academic Headings ===
+    def chunk_by_standard_sections(text):
+        # Expanded set of common section headings
+        pattern = r"\n(?=\s*(Abstract|Introduction|Background|Literature Review|Theoretical Framework|Methodology|Methods|Results|Findings|Discussion|Conclusion|References))"
+        chunks = re.split(pattern, text, flags=re.IGNORECASE)
+        section_dict = {}
+        for i in range(1, len(chunks), 2):
+            section = chunks[i].strip().lower()
+            content = chunks[i + 1].strip()
+            section_dict[section] = content
+        return section_dict
 
-        sections = {}
-        for idx in range(len(section_starts)):
-            title = section_starts[idx][1].lower()
-            start = section_starts[idx][0]
-            end = section_starts[idx + 1][0] if idx + 1 < len(section_starts) else len(lines)
-            content = "\n".join(lines[start + 1:end]).strip()
-            sections[title] = content
-        return sections
-
-    sections = chunk_by_dynamic_headings(full_text)
+    sections = chunk_by_standard_sections(full_text)
 
     if sections:
         st.subheader("📑 Detected Sections")
@@ -112,5 +105,5 @@ Use bullet points.
             st.subheader("📌 Research Assistant Analysis")
             st.write(analysis)
     else:
-        st.warning("⚠️ No valid section headings detected. Try a more structured academic paper.")
+        st.warning("⚠️ No recognizable academic sections found in this paper.")
 
