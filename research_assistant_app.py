@@ -10,26 +10,41 @@ st.set_page_config(page_title="AI Research Assistant", layout="wide")
 st.title("📚 AI-Powered Research Assistant")
 st.markdown("Upload a research paper and get summarized insights + research guidance.")
 
-# === OpenAI client from secrets ===
+# === OpenAI client using Streamlit secrets ===
 api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=api_key)
 
-# === File Upload ===
+# === Upload PDF ===
 uploaded_file = st.file_uploader("📄 Upload PDF Paper", type="pdf")
 
 if uploaded_file:
     # === Extract Text from PDF ===
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    full_text = "".join([page.get_text() for page in doc])
-    st.success("✅ PDF extracted successfully!")
+    try:
+        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        full_text = "".join([page.get_text() for page in doc])
+        st.success("✅ PDF extracted successfully!")
+    except Exception as e:
+        st.error(f"❌ Failed to read PDF: {e}")
+        st.stop()
 
-    # === Split by Sections ===
-    def chunk_by_sections(text):
-        pattern = r'\n(?=\s*(Abstract|Introduction|Background|Methodology|Methods|Results|Findings|Discussion|Conclusion|References))'
-        chunks = re.split(pattern, text, flags=re.IGNORECASE)
-        return {chunks[i].strip().lower(): chunks[i+1].strip() for i in range(1, len(chunks)-1, 2)}
+    # === Dynamic Section Chunking ===
+    def chunk_by_dynamic_headings(text):
+        lines = text.split("\n")
+        section_starts = []
+        for i, line in enumerate(lines):
+            if 2 <= len(line.split()) <= 6 and line.strip().istitle():
+                section_starts.append((i, line.strip()))
 
-    sections = chunk_by_sections(full_text)
+        sections = {}
+        for idx in range(len(section_starts)):
+            title = section_starts[idx][1].lower()
+            start = section_starts[idx][0]
+            end = section_starts[idx + 1][0] if idx + 1 < len(section_starts) else len(lines)
+            content = "\n".join(lines[start + 1:end]).strip()
+            sections[title] = content
+        return sections
+
+    sections = chunk_by_dynamic_headings(full_text)
 
     if sections:
         st.subheader("📑 Detected Sections")
@@ -44,7 +59,7 @@ Summarize the following '{title}' section of a research paper in 4–6 bullet po
 \"\"\"{content}\"\"\""""
 
             response = client.chat.completions.create(
-                model="gpt-4",  # default model
+                model="gpt-4",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.4,
                 max_tokens=600
@@ -97,8 +112,5 @@ Use bullet points.
             st.subheader("📌 Research Assistant Analysis")
             st.write(analysis)
     else:
-        st.warning("⚠️ No standard sections (Abstract, Introduction, etc.) found in this PDF.")
+        st.warning("⚠️ No valid section headings detected. Try a more structured academic paper.")
 
-        analysis = analyze_research_opportunities(combined_summary, research_question)
-        st.subheader("📌 Research Assistant Analysis")
-        st.write(analysis)
