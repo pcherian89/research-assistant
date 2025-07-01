@@ -59,13 +59,24 @@ Summarize the following '{title}' section of a research paper in 4–6 bullet po
             )
             return response.choices[0].message.content.strip()
 
-        summaries = {}
-        with st.expander("📘 Summarized Sections", expanded=True):
-            for title, content in sections.items():
-                summary = summarize_section(title, content)
-                summaries[title] = summary
-                st.markdown(f"### {title.capitalize()}")
-                st.write(summary)
+        if "summaries" not in st.session_state:
+            st.session_state.summaries = {}
+        
+        if not st.session_state.summaries:
+            summaries = {}
+            with st.expander("📘 Summarized Sections", expanded=True):
+                for title, content in sections.items():
+                    summary = summarize_section(title, content)
+                    summaries[title] = summary
+                    st.markdown(f"### {title.capitalize()}")
+                    st.write(summary)
+                st.session_state.summaries = summaries
+        else:
+            with st.expander("📘 Summarized Sections", expanded=True):
+                for title, summary in st.session_state.summaries.items():
+                    st.markdown(f"### {title.capitalize()}")
+                    st.write(summary)
+
 
         # === Research Question Input ===
         st.subheader("🧠 Your Research Question")
@@ -73,7 +84,7 @@ Summarize the following '{title}' section of a research paper in 4–6 bullet po
 
         if st.button("🔍 Analyze My Research Question") and research_question:
             combined_summary = "\n\n".join(
-                [f"{k.capitalize()}:\n{v}" for k, v in summaries.items()]
+                [f"{k.capitalize()}:\n{v}" for k, v in st.session_state.summaries.items()]
             )
 
             def analyze_research_opportunities(summary_text, research_question):
