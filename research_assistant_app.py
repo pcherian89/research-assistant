@@ -206,11 +206,13 @@ elif mode == "📚 Build Literature Review":
     st.subheader("📚 Upload 2–5 Research Papers for Literature Review")
     uploaded_files = st.file_uploader("Upload multiple PDFs", type="pdf", accept_multiple_files=True)
 
+    if "lit_summaries" not in st.session_state:
+        st.session_state.lit_summaries = []
+
     if uploaded_files and len(uploaded_files) <= 5:
-        paper_summaries = []
         if st.button("✏️ Generate Summaries for Each Paper"):
             import fitz
-
+            st.markdown("⏳ **Summarizing papers... please wait.**")
             for idx, file in enumerate(uploaded_files):
                 try:
                     doc = fitz.open(stream=file.read(), filetype="pdf")
@@ -232,7 +234,7 @@ Summarize the following section of a research paper in bullet points, focusing o
 
 Use formal academic tone.
 
-\"\"\"{chunk}\"\"\"
+"""{chunk}"""
 '''
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
@@ -243,7 +245,7 @@ Use formal academic tone.
                         partial_summaries.append(response.choices[0].message.content.strip())
 
                     full_summary = "\n".join(partial_summaries)
-                    paper_summaries.append(full_summary)
+                    st.session_state.lit_summaries.append(full_summary)
 
                     st.markdown(f"### 📘 Summary of Paper {idx + 1}")
                     st.markdown(full_summary)
@@ -251,23 +253,23 @@ Use formal academic tone.
                 except Exception as e:
                     st.error(f"❌ Failed to summarize paper {idx + 1}: {e}")
 
-        if paper_summaries:
-            st.markdown("🧠 **What is your research question or focus?**")
+        if st.session_state.lit_summaries:
+            st.markdown("🧐 **What is your research question or focus?**")
             research_question_multi = st.text_area(
                 "Enter your research question to guide the literature review synthesis.",
                 key="lit_review_question"
             )
 
             if st.button("📌 Build Literature Review") and research_question_multi:
-                summaries_text = "\n\n".join(paper_summaries)
+                summaries_text = "\n\n".join(st.session_state.lit_summaries)
                 synth_prompt = f"""
 You are a literature review assistant.
 
 Based on the following summaries of multiple academic papers:
-\"\"\"{summaries_text}\"\"\"
+"""{summaries_text}"""
 
 And the research question:
-\"{research_question_multi}\"
+"{research_question_multi}"
 
 Write a 300–500 word literature review that includes:
 - Common themes across the papers
@@ -300,5 +302,6 @@ Use formal academic language and clear structure.
                         st.error(f"❌ Failed to generate literature review: {e}")
     elif uploaded_files and len(uploaded_files) > 5:
         st.warning("Please upload 5 or fewer PDFs.")
+
 
 
