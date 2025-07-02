@@ -3,6 +3,10 @@ import fitz  # PyMuPDF
 import re
 from openai import OpenAI
 
+# === Load OpenAI key from Streamlit secrets ===
+api_key = st.secrets["OPENAI_API_KEY"]
+client = OpenAI(api_key=api_key)
+
 # === SETUP ===
 st.set_page_config(page_title="AI Research Assistant", layout="wide")
 st.title("📚 AI-Powered Research Assistant")
@@ -11,10 +15,6 @@ if mode == "📄 Analyze One Paper":
     # all your existing code
 
     st.markdown("Upload a research paper and get summarized insights + research guidance.")
-    
-    # === Load OpenAI key from Streamlit secrets ===
-    api_key = st.secrets["OPENAI_API_KEY"]
-    client = OpenAI(api_key=api_key)
     
     # === Session state setup ===
     if "summaries" not in st.session_state:
