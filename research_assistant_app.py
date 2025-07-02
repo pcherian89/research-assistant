@@ -58,7 +58,7 @@ Summarize the following '{title}' section of a research paper in 4–6 bullet po
 
 \"\"\"{content}\"\"\""""
                     response = client.chat.completions.create(
-                        model="gpt-4",
+                        model="gpt-3.5",
                         messages=[{"role": "user", "content": prompt}],
                         temperature=0.4,
                         max_tokens=600
@@ -109,7 +109,7 @@ Use bullet points.
         with st.spinner("🔎 Analyzing your research question..."):
             try:
                 response = client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-3.5",
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.3,
                     max_tokens=1000
