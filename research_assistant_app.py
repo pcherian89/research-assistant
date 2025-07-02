@@ -124,3 +124,66 @@ if st.session_state.analysis:
     st.subheader("📌 Research Assistant Analysis")
     st.write(st.session_state.analysis)
 
+from io import BytesIO
+from reportlab.lib.pagesizes import LETTER
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+
+# === PDF Download ===
+if st.session_state.summaries and st.session_state.analysis:
+    st.subheader("📥 Download Summary + Analysis as PDF")
+
+    # Generate content
+    summary_text = "\n\n".join(
+        [f"{k.upper()}\n{v}" for k, v in st.session_state.summaries.items()]
+    )
+
+    full_text = f"""AI Research Assistant Output
+
+--- SECTION SUMMARIES ---
+
+{summary_text}
+
+--- RESEARCH QUESTION ---
+
+{research_question}
+
+--- ANALYSIS ---
+
+{st.session_state.analysis}
+"""
+
+    # Generate PDF in memory
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=LETTER)
+    width, height = LETTER
+
+    # Function to split long text into lines
+    def draw_wrapped_text(c, text, x, y, max_width, line_height):
+        from textwrap import wrap
+        lines = text.split("\n")
+        for line in lines:
+            wrapped = wrap(line, width=100)
+            for wrap_line in wrapped:
+                if y < 1 * inch:
+                    c.showPage()
+                    y = height - 1 * inch
+                c.drawString(x, y, wrap_line)
+                y -= line_height
+        return y
+
+    pdf.setFont("Helvetica", 11)
+    y = height - 1 * inch
+    x = 1 * inch
+    y = draw_wrapped_text(pdf, full_text, x, y, width - 2 * inch, 14)
+    pdf.save()
+
+    buffer.seek(0)
+
+    # Show download button
+    st.download_button(
+        label="⬇️ Download as PDF",
+        data=buffer,
+        file_name="research_summary_analysis.pdf",
+        mime="application/pdf"
+    )
