@@ -206,91 +206,94 @@ elif mode == "📚 Build Literature Review":
     st.subheader("📚 Upload 2–5 Research Papers for Literature Review")
 
     uploaded_files = st.file_uploader("Upload multiple PDFs", type="pdf", accept_multiple_files=True)
+    summaries = []
 
     if uploaded_files and len(uploaded_files) <= 5:
-        research_question_multi = st.text_area("🧠 What is your research question or focus?")
-
-        # Store summaries in session_state to keep for step 2
-        if "multi_summaries" not in st.session_state:
-            st.session_state.multi_summaries = []
-
-        if st.button("📄 Generate Individual Summaries"):
+        if st.button("📝 Generate Summaries for Each Paper"):
             from io import BytesIO
             import fitz
 
-            st.session_state.multi_summaries.clear()
-            with st.spinner("📖 Summarizing each paper..."):
-                for i, file in enumerate(uploaded_files):
-                    try:
-                        doc = fitz.open(stream=file.read(), filetype="pdf")
-                        text = "".join([page.get_text() for page in doc])
+            for idx, file in enumerate(uploaded_files, 1):
+                try:
+                    doc = fitz.open(stream=file.read(), filetype="pdf")
+                    full_text = "\n".join([page.get_text() for page in doc])
+                    truncated_text = full_text[:12000]  # Safety cap for context size
 
-                        prompt = f"""
+                    summary_prompt = f"""
 You are an academic research assistant.
 
-Summarize the following research paper in 8–10 detailed bullet points using a formal academic tone. Focus on:
-- Central research objective
-- Methodology used
-- Key results or findings
-- Major limitations or caveats
-- Relevance to broader field
+Summarize the following research paper in 8–10 bullet points, focusing on:
+- Central research question
+- Methodology
+- Key findings
+- Limitations
+- Contributions and implications
 
-\"\"\"{text}\"\"\"
+Use formal academic language and clarity.
+
+\"\"\"{truncated_text}\"\"\"
 """
-                        response = client.chat.completions.create(
-                            model="gpt-3.5-turbo",
-                            messages=[{"role": "user", "content": prompt}],
-                            temperature=0.4,
-                            max_tokens=800
-                        )
-                        summary = response.choices[0].message.content.strip()
-                        st.session_state.multi_summaries.append(summary)
 
-                        st.markdown(f"### 📘 Summary of Paper {i+1}")
-                        st.write(summary)
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": summary_prompt}],
+                        temperature=0.4,
+                        max_tokens=800
+                    )
 
-                    except Exception as e:
-                        st.error(f"Failed to summarize paper {i+1}: {e}")
+                    paper_summary = response.choices[0].message.content.strip()
+                    summaries.append(paper_summary)
 
-        if st.session_state.multi_summaries and st.button("🧠 Build Literature Review"):
-            combined_summaries = "\n\n".join(st.session_state.multi_summaries)
-            synth_prompt = f"""
+                    st.markdown(f"### 📘 Summary of Paper {idx}")
+                    st.write(paper_summary)
+
+                except Exception as e:
+                    st.error(f"❌ Failed to summarize paper {idx}: {e}")
+                    continue
+
+        if summaries:
+            research_question_multi = st.text_area("🧠 What is your research question or focus?")
+            if st.button("📌 Build Literature Review") and research_question_multi:
+                combined_summary_text = "\n\n".join(summaries)
+
+                lit_review_prompt = f"""
 You are a literature review assistant.
 
-Given the following academic paper summaries:
-\"\"\"{combined_summaries}\"\"\"
+Based on the following summaries of academic papers:
+\"\"\"{combined_summary_text}\"\"\"
 
 And the research question:
 \"{research_question_multi}\"
 
-Write a well-structured 300–500 word literature review that:
-- Synthesizes common themes
-- Highlights any conflicting findings
-- Notes methodological patterns or differences
-- Identifies any clear gaps in the literature
-- Explains how these papers inform the given research question
+Write a 300–500 word literature review that includes:
+- Common themes across the papers
+- Conflicting findings or perspectives
+- Methodological trends or gaps
+- Contributions to the field
+- How these relate to the research question
 
-Use a formal academic tone, structured paragraphs, and fluent transitions.
+Use formal academic tone and structure.
 """
 
-            with st.spinner("🧠 Synthesizing final literature review..."):
-                final_response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": synth_prompt}],
-                    temperature=0.4,
-                    max_tokens=1000
-                )
-                lit_review_output = final_response.choices[0].message.content.strip()
+                with st.spinner("🧠 Synthesizing literature review..."):
+                    final_response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": lit_review_prompt}],
+                        temperature=0.4,
+                        max_tokens=1000
+                    )
+                    lit_review_output = final_response.choices[0].message.content.strip()
+                    st.subheader("📌 Literature Review")
+                    st.write(lit_review_output)
 
-                st.subheader("📌 Literature Review")
-                st.write(lit_review_output)
-
-                st.download_button(
-                    label="⬇️ Download Literature Review",
-                    data=lit_review_output,
-                    file_name="literature_review.txt",
-                    mime="text/plain"
-                )
+                    st.download_button(
+                        label="⬇️ Download Literature Review",
+                        data=lit_review_output,
+                        file_name="literature_review.txt",
+                        mime="text/plain"
+                    )
 
     elif uploaded_files and len(uploaded_files) > 5:
+        st.warning("⚠️ Please upload 5 or fewer PDFs.")
+
         st.warning("Please upload 5 or fewer PDFs.")
