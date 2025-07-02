@@ -201,3 +201,91 @@ if mode == "📄 Analyze One Paper":
             file_name="research_summary_analysis.pdf",
             mime="application/pdf"
         )
+
+elif mode == "📚 Build Literature Review":
+    st.subheader("📚 Upload 2–5 Research Papers for Literature Review")
+
+    uploaded_files = st.file_uploader("Upload multiple PDFs", type="pdf", accept_multiple_files=True)
+
+    if uploaded_files and len(uploaded_files) <= 5:
+        research_question_multi = st.text_area("🧠 What is your research question or focus?")
+
+        if st.button("📝 Build Literature Review") and research_question_multi:
+            from io import BytesIO
+            import fitz
+
+            paper_summaries = []
+
+            with st.spinner("📖 Reading and summarizing all papers..."):
+                for file in uploaded_files:
+                    try:
+                        doc = fitz.open(stream=file.read(), filetype="pdf")
+                        text = "".join([page.get_text() for page in doc])
+                        prompt = f"""
+You are an academic assistant.
+
+Summarize the following research paper in 5–6 bullet points, focusing on:
+- Main topic and purpose
+- Methodology
+- Key findings
+- Limitations (if any)
+- Contribution to the field
+
+Use formal academic tone.
+
+\"\"\"{text}\"\"\"
+"""
+                        response = client.chat.completions.create(
+                            model="gpt-3.5-turbo",
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=0.4,
+                            max_tokens=700
+                        )
+                        summary = response.choices[0].message.content.strip()
+                        paper_summaries.append(summary)
+                    except Exception as e:
+                        st.error(f"Failed to summarize one paper: {e}")
+                        continue
+
+            # Now synthesize all summaries into a lit review
+            combined_summaries = "\n\n".join(paper_summaries)
+            synth_prompt = f"""
+You are a literature review assistant.
+
+Based on the following summaries of multiple academic papers:
+\"\"\"{combined_summaries}\"\"\"
+
+And the research question:
+\"{research_question_multi}\"
+
+Write a 300–500 word literature review that includes:
+- Common themes across the papers
+- Conflicting findings or theoretical disagreements
+- Methodological similarities or differences
+- Identified gaps in the current literature
+- How these papers inform or relate to the research question
+
+Use formal academic language and clear structure.
+"""
+
+            with st.spinner("🧠 Synthesizing literature review..."):
+                final_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": synth_prompt}],
+                    temperature=0.4,
+                    max_tokens=1000
+                )
+                lit_review_output = final_response.choices[0].message.content.strip()
+                st.subheader("📌 Literature Review")
+                st.write(lit_review_output)
+
+                # Optional: download button
+                st.download_button(
+                    label="⬇️ Download Literature Review",
+                    data=lit_review_output,
+                    file_name="literature_review.txt",
+                    mime="text/plain"
+                )
+
+    elif uploaded_files and len(uploaded_files) > 5:
+        st.warning("Please upload 5 or fewer PDFs.")
