@@ -206,17 +206,20 @@ elif mode == "📚 Build Literature Review":
     st.subheader("📚 Upload 2–5 Research Papers for Literature Review")
     uploaded_files = st.file_uploader("Upload multiple PDFs", type="pdf", accept_multiple_files=True)
 
-    if "lit_summaries" not in st.session_state:
-        st.session_state.lit_summaries = []
-
     if uploaded_files and len(uploaded_files) <= 5:
+        if "lit_summaries" not in st.session_state:
+            st.session_state.lit_summaries = []
+
         if st.button("✏️ Generate Summaries for Each Paper"):
+            st.info("⏳ Summarizing papers... please wait.")
             import fitz
-            st.markdown("⏳ **Summarizing papers... please wait.**")
+
             for idx, file in enumerate(uploaded_files):
                 try:
                     doc = fitz.open(stream=file.read(), filetype="pdf")
                     full_text = "".join([page.get_text() for page in doc])
+
+                    # Split into 8000-character chunks
                     chunks = [full_text[i:i+8000] for i in range(0, len(full_text), 8000)]
 
                     partial_summaries = []
@@ -234,7 +237,7 @@ Summarize the following section of a research paper in bullet points, focusing o
 
 Use formal academic tone.
 
-"""{chunk}"""
+\"\"\"{chunk}\"\"\"
 '''
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
@@ -254,7 +257,7 @@ Use formal academic tone.
                     st.error(f"❌ Failed to summarize paper {idx + 1}: {e}")
 
         if st.session_state.lit_summaries:
-            st.markdown("🧐 **What is your research question or focus?**")
+            st.markdown("🧠 **What is your research question or focus?**")
             research_question_multi = st.text_area(
                 "Enter your research question to guide the literature review synthesis.",
                 key="lit_review_question"
@@ -266,10 +269,10 @@ Use formal academic tone.
 You are a literature review assistant.
 
 Based on the following summaries of multiple academic papers:
-"""{summaries_text}"""
+\"\"\"{summaries_text}\"\"\"
 
 And the research question:
-"{research_question_multi}"
+\"{research_question_multi}\"
 
 Write a 300–500 word literature review that includes:
 - Common themes across the papers
