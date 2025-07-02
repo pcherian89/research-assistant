@@ -210,28 +210,30 @@ elif mode == "📚 Build Literature Review":
     if uploaded_files and len(uploaded_files) <= 5:
         research_question_multi = st.text_area("🧠 What is your research question or focus?")
 
-        if st.button("📝 Build Literature Review") and research_question_multi:
+        # Store summaries in session_state to keep for step 2
+        if "multi_summaries" not in st.session_state:
+            st.session_state.multi_summaries = []
+
+        if st.button("📄 Generate Individual Summaries"):
             from io import BytesIO
             import fitz
 
-            paper_summaries = []
-
-            with st.spinner("📖 Reading and summarizing all papers..."):
-                for file in uploaded_files:
+            st.session_state.multi_summaries.clear()
+            with st.spinner("📖 Summarizing each paper..."):
+                for i, file in enumerate(uploaded_files):
                     try:
                         doc = fitz.open(stream=file.read(), filetype="pdf")
                         text = "".join([page.get_text() for page in doc])
+
                         prompt = f"""
-You are an academic assistant.
+You are an academic research assistant.
 
-Summarize the following research paper in 5–6 bullet points, focusing on:
-- Main topic and purpose
-- Methodology
-- Key findings
-- Limitations (if any)
-- Contribution to the field
-
-Use formal academic tone.
+Summarize the following research paper in 8–10 detailed bullet points using a formal academic tone. Focus on:
+- Central research objective
+- Methodology used
+- Key results or findings
+- Major limitations or caveats
+- Relevance to broader field
 
 \"\"\"{text}\"\"\"
 """
@@ -239,36 +241,39 @@ Use formal academic tone.
                             model="gpt-3.5-turbo",
                             messages=[{"role": "user", "content": prompt}],
                             temperature=0.4,
-                            max_tokens=700
+                            max_tokens=800
                         )
                         summary = response.choices[0].message.content.strip()
-                        paper_summaries.append(summary)
-                    except Exception as e:
-                        st.error(f"Failed to summarize one paper: {e}")
-                        continue
+                        st.session_state.multi_summaries.append(summary)
 
-            # Now synthesize all summaries into a lit review
-            combined_summaries = "\n\n".join(paper_summaries)
+                        st.markdown(f"### 📘 Summary of Paper {i+1}")
+                        st.write(summary)
+
+                    except Exception as e:
+                        st.error(f"Failed to summarize paper {i+1}: {e}")
+
+        if st.session_state.multi_summaries and st.button("🧠 Build Literature Review"):
+            combined_summaries = "\n\n".join(st.session_state.multi_summaries)
             synth_prompt = f"""
 You are a literature review assistant.
 
-Based on the following summaries of multiple academic papers:
+Given the following academic paper summaries:
 \"\"\"{combined_summaries}\"\"\"
 
 And the research question:
 \"{research_question_multi}\"
 
-Write a 300–500 word literature review that includes:
-- Common themes across the papers
-- Conflicting findings or theoretical disagreements
-- Methodological similarities or differences
-- Identified gaps in the current literature
-- How these papers inform or relate to the research question
+Write a well-structured 300–500 word literature review that:
+- Synthesizes common themes
+- Highlights any conflicting findings
+- Notes methodological patterns or differences
+- Identifies any clear gaps in the literature
+- Explains how these papers inform the given research question
 
-Use formal academic language and clear structure.
+Use a formal academic tone, structured paragraphs, and fluent transitions.
 """
 
-            with st.spinner("🧠 Synthesizing literature review..."):
+            with st.spinner("🧠 Synthesizing final literature review..."):
                 final_response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": synth_prompt}],
@@ -276,10 +281,10 @@ Use formal academic language and clear structure.
                     max_tokens=1000
                 )
                 lit_review_output = final_response.choices[0].message.content.strip()
+
                 st.subheader("📌 Literature Review")
                 st.write(lit_review_output)
 
-                # Optional: download button
                 st.download_button(
                     label="⬇️ Download Literature Review",
                     data=lit_review_output,
