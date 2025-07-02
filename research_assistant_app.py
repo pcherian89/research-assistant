@@ -85,38 +85,38 @@ Summarize the following '{title}' section of a research paper in 4–6 bullet po
             combined_summary = "\n\n".join(
                 [f"{k.capitalize()}:\n{v}" for k, v in st.session_state.summaries.items()]
             )
-
-            prompt = f"""
-You are an expert academic research assistant.
-
-The following is a summarized paper:
-\"\"\"{combined_summary}\"\"\"
-
-And here is a research question:
-\"{research_question}\"
-
-Please:
-1. List 3–5 limitations in the original paper.
-2. Identify 3 gaps or unexplored issues.
-3. Suggest how this research question can be explored in a new study.
-
-Use bullet points.
-"""
-            try:
+        
+            def analyze_research_opportunities(summary_text, research_question):
+                prompt = f"""
+                You are an expert academic research assistant.
+        
+                The following is a summarized paper:
+                \"\"\"{summary_text}\"\"\"
+        
+                And here is a research question:
+                \"{research_question}\"
+        
+                Please:
+                1. List 3–5 limitations in the original paper.
+                2. Identify 3 gaps or unexplored issues.
+                3. Suggest how this research question can be explored in a new study.
+        
+                Use bullet points.
+                """
                 response = client.chat.completions.create(
                     model="gpt-4",
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.3,
                     max_tokens=1000
                 )
-                st.session_state.analysis = response.choices[0].message.content.strip()
-            except Exception as e:
-                st.error(f"❌ Failed to analyze research question: {e}")
-
-        # === Show analysis if already done ===
-        if st.session_state.analysis:
+                return response.choices[0].message.content.strip()
+        
+            with st.spinner("🔎 Analyzing your research question..."):
+                analysis = analyze_research_opportunities(combined_summary, research_question)
+        
             st.subheader("📌 Research Assistant Analysis")
-            st.write(st.session_state.analysis)
+            st.write(analysis)
+
 
     else:
         st.warning("⚠️ No recognizable academic sections found in this paper.")
