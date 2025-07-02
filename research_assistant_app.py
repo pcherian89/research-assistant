@@ -52,11 +52,18 @@ if uploaded_file:
         if st.button("🧾 Summarize Sections"):
             with st.spinner("📝 Summarizing..."):
                 def summarize_section(title, content):
-                    prompt = f"""You are a helpful research assistant.
+                    prompt = f"""You are an expert academic research assistant specializing in synthesizing scholarly literature.
 
-Summarize the following '{title}' section of a research paper in 4–6 bullet points:
+                    Carefully read the following '{title}' section from a research paper and produce a **high-quality summary** in 4–6 bullet points that:
+                    - Identifies key arguments, findings, or methodologies
+                    - Uses precise academic language
+                    - Highlights nuanced points or theoretical insights where relevant
+                    - Omits redundant or general filler content
+                    
+                    Text to summarize:
+                    \"\"\"{content}\"\"\"
+                    """
 
-\"\"\"{content}\"\"\""""
                     response = client.chat.completions.create(
                         model="gpt-3.5-turbo",
                         messages=[{"role": "user", "content": prompt}],
@@ -91,21 +98,24 @@ if st.session_state.summaries:
         )
 
         prompt = f"""
-You are an expert academic research assistant.
+        You are an experienced academic research advisor.
+        
+        Below is a summary of a research paper:
+        \"\"\"{combined_summary}\"\"\"
+        
+        And here is a new research question proposed by the user:
+        \"{research_question}\"
+        
+        Your task is to critically analyze the summary and offer insights that will help the user refine or extend their research idea. Specifically:
+        
+        1. Identify 3–5 **methodological or conceptual limitations** in the original study. Be specific (e.g., sample issues, lack of longitudinal data, theoretical bias, etc.).
+        2. Point out 3 **gaps, blind spots, or underexplored dimensions** that are either unaddressed or only weakly examined.
+        3. Offer **clear, researchable suggestions** for how the new research question can be pursued in a future study (e.g., potential data sources, methods, populations, frameworks).
+        
+        Ensure your response is structured, precise, and uses formal academic tone.
+        Use bullet points under each section.
+        """
 
-The following is a summarized paper:
-\"\"\"{combined_summary}\"\"\"
-
-And here is a research question:
-\"{research_question}\"
-
-Please:
-1. List 3–5 limitations in the original paper.
-2. Identify 3 gaps or unexplored issues.
-3. Suggest how this research question can be explored in a new study.
-
-Use bullet points.
-"""
         with st.spinner("🔎 Analyzing your research question..."):
             try:
                 response = client.chat.completions.create(
