@@ -295,19 +295,22 @@ Based on the following summaries of academic papers:
 And the research question:
 \"{research_question_multi}\"
 
-Write a 300–500 word literature review that includes:
+Write a 300–500 word **literature review** using **APA style in-text citations**.
+
+🔹 Incorporate these elements:
 - Common themes across the papers
-- Conflicting findings or theoretical disagreements
+- Conflicting findings or disagreements
 - Methodological similarities or differences
 - Identified gaps in the current literature
-- How these papers inform or relate to the research question
+- How these relate to the research question
 
-🧠 Use **APA-style in-text citations** (Author, Year).  
-📝 At the end, include a **References** section in full APA citation format, based on the source content.
+🔹 Use APA-style in-text citations based on each summary. Format like:
+  - (Smith & Jones, 2023)
+  - or According to Smith and Jones (2023)...
 
-If author and year are not explicitly available, approximate based on text and write plausible placeholders.
+Do not write “Author (Year)”; use actual author names from the summaries.
 
-Maintain a formal academic tone and structure the review clearly.
+Use formal academic language and structured paragraphs.
 """
 
             with st.spinner("🧠 Synthesizing literature review..."):
