@@ -268,7 +268,7 @@ Use formal academic tone.
             synth_prompt = f"""
 You are a literature review assistant.
 
-Based on the following summaries of multiple academic papers:
+Based on the following summaries of academic papers:
 \"\"\"{summaries_text}\"\"\"
 
 And the research question:
@@ -281,8 +281,14 @@ Write a 300–500 word literature review that includes:
 - Identified gaps in the current literature
 - How these papers inform or relate to the research question
 
-Use formal academic language and clear structure.
+🧠 Use **APA-style in-text citations** (Author, Year).  
+📝 At the end, include a **References** section in full APA citation format, based on the source content.
+
+If author and year are not explicitly available, approximate based on text and write plausible placeholders.
+
+Maintain a formal academic tone and structure the review clearly.
 """
+
             with st.spinner("🧠 Synthesizing literature review..."):
                 try:
                     final_response = client.chat.completions.create(
