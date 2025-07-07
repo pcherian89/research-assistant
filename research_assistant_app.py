@@ -220,6 +220,22 @@ elif mode == "📚 Build Literature Review":
                 try:
                     doc = fitz.open(stream=file.read(), filetype="pdf")
                     full_text = "".join([page.get_text() for page in doc])
+                    # === Extract Author and Year from Metadata or First Page ===
+                    metadata = doc.metadata
+                    title = metadata.get("title", "Untitled Paper")
+                    author = metadata.get("author", "Unknown Author")
+                    
+                    # Try to find year from metadata or fallback to first page
+                    year = "Unknown Year"
+                    first_page_text = doc[0].get_text()
+                    import re
+                    year_match = re.search(r"(19|20)\d{2}", first_page_text)
+                    if year_match:
+                        year = year_match.group()
+                    
+                    # Create citation string for this paper
+                    citation_info = f"{author} ({year})"
+
                     chunks = [full_text[i:i+8000] for i in range(0, len(full_text), 8000)]
 
                     partial_summaries = []
@@ -227,7 +243,11 @@ elif mode == "📚 Build Literature Review":
                         chunk_prompt = f'''
 You are an academic assistant.
 
-Summarize the following section of a research paper in bullet points, focusing on:
+This section is from a paper authored by {citation_info}.
+
+Summarize the section in bullet points, and **include the author name and year once** so the summary can be cited in APA format.
+
+Focus on:
 - Main topic and purpose
 - Research question (if stated)
 - Methodology
@@ -239,6 +259,7 @@ Use formal academic tone.
 
 \"\"\"{chunk}\"\"\"
 '''
+
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
                             messages=[{"role": "user", "content": chunk_prompt}],
