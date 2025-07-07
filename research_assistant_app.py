@@ -287,7 +287,7 @@ Use formal academic tone.
         if st.button("📌 Build Literature Review") and research_question_multi and st.session_state.lit_summaries:
             summaries_text = "\n\n".join(st.session_state.lit_summaries)
             synth_prompt = f"""
-You are a literature review assistant.
+You are an academic assistant.
 
 Based on the following summaries of academic papers:
 \"\"\"{summaries_text}\"\"\"
@@ -295,23 +295,24 @@ Based on the following summaries of academic papers:
 And the research question:
 \"{research_question_multi}\"
 
-Write a 300–500 word **literature review** using **APA style in-text citations**.
+Write a 300–500 word literature review using proper APA style, with:
+- Author-year **in-text citations** integrated naturally within sentences (e.g., "Liao and Craig (2023) found that..." or "...as shown in recent studies (Willson & Kerr, 2023)")
+- Avoid repeating the same citation multiple times in one paragraph
+- Cite each paper only when relevant to a specific point
+- Do **not** include page numbers
+- Include a “References” section at the end, formatted in APA style using the filenames provided:
+{[file.name for file in uploaded_files]}
 
-🔹 Incorporate these elements:
+The review should include:
 - Common themes across the papers
 - Conflicting findings or disagreements
 - Methodological similarities or differences
-- Identified gaps in the current literature
-- How these relate to the research question
+- Gaps in current literature
+- How these studies relate to the research question
 
-🔹 Use APA-style in-text citations based on each summary. Format like:
-  - (Smith & Jones, 2023)
-  - or According to Smith and Jones (2023)...
-
-Do not write “Author (Year)”; use actual author names from the summaries.
-
-Use formal academic language and structured paragraphs.
+Use a formal academic tone and clear structure.
 """
+
 
             with st.spinner("🧠 Synthesizing literature review..."):
                 try:
